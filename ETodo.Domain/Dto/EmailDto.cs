@@ -6,9 +6,8 @@ using System.Threading.Tasks;
 
 namespace ETodo.Domain.Dto
 {
-    public class PasswordDto
+    public class EmailDto
     {
-        public string Password { get; set; }
-        public string Email { get; set; }   
+        public string Email { get; set; }
     }
 }

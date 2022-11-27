@@ -1,4 +1,6 @@
 ﻿using ETodo.Domain.Dto;
+using ETodo.Domain.Entity;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
@@ -50,6 +52,7 @@ namespace TodoApi.Controllers
 
         }
 
+        [Authorize (Roles = "Admin")]
         [HttpGet]
         public async Task<IActionResult> AllTodoUser()
         {
@@ -68,7 +71,7 @@ namespace TodoApi.Controllers
             }
             
         }
-
+        
         [HttpPut]
         public async Task<AppTodoItem> Update([FromBody] string taskname)
         {
@@ -87,24 +90,43 @@ namespace TodoApi.Controllers
                     return result;
         }
 
+      
         [HttpPost("Login")]
         public async Task<IActionResult> Login([FromBody]SigninDto signinDto)
         {
             try
             {
                 var result = await _service.Login(signinDto);
-                if (!result.Contains("login successful"))
+                if (result == null)
                 {
                     return BadRequest();
                 }
-                return StatusCode(200, "sucessful");
+                return StatusCode(200, result);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ex.Message);
+                return BadRequest(ex.Message);
             }
 
         
+        }
+        [HttpPost("VerifyPassword")]
+        public async Task<IActionResult> VerifyPassword(PasswordDto passwordDto)
+        {
+            try
+            {
+                var result = await _service.VerifyPassword(passwordDto);
+                if (result.Contains("success"))
+                {
+                    return Ok(result);
+                }
+                return BadRequest();
+            }
+            catch(Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+         
         }
 
         [HttpPost("AddMyTodos")]
@@ -131,16 +153,27 @@ namespace TodoApi.Controllers
             
         }
 
+        [Authorize]
         [HttpPost("Register")]
-        public async Task<IActionResult> Register(RegiUserDto regiUser)
+        public async Task<IActionResult> Register(RegiUserDto regiUserDto)
         {
+            
             try
             {
+
                 if (!ModelState.IsValid)
                 {
                     return BadRequest();
                 }
-                var result = await _service.Register(regiUser);
+                //var regiUserDto = new RegiUserDto()
+                //{
+                //   // FirstName = regiUser.FirstName,
+                //   // SecondName = regiUser.SecondName,
+
+                //    Email = regiUser.Email
+                //};
+               // var regiUserDto = new RegiUserDto();
+                var result = await _service.Register(regiUserDto);
                 if (result.Contains("successful register"))
                 {
                     return StatusCode(200, "successful");

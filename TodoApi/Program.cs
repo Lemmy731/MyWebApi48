@@ -1,10 +1,17 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using MTodo.Infrastruture;
 using PTodo.Application.Implementation;
 using PTodo.Application.Interface;
+using Swashbuckle.AspNetCore.Filters;
 using System.Data.Common;
+using System.IdentityModel.Tokens.Jwt;
+using System.Text;
+using System.Xml.Linq;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,78 +20,54 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddDbContext<RDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("connectionString")));
 builder.Services.AddScoped<IService, Service>();
-builder.Services.AddIdentity<AppTodoItem, IdentityRole>().AddEntityFrameworkStores<RDbContext>();
 builder.Services.AddScoped<IAddMyTodo, AddMyTodo>();
+builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddIdentity<AppTodoItem, IdentityRole>().AddEntityFrameworkStores<RDbContext>();
 
-//  start
-//builder.Services.AddAuthentication(options =>
-//{ 
-//options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme
-//options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme
-//options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme
-//}) .AddJwtBearer(o =>
-//{
-// o.TokenValidationParameters = new TokenValidationParameters
-//{
-//   ValidIssuer = builder.Configuration["Jwt:Issuer],
- //  ValidAudience = builder.Configuration[Jwt:Audience],
- //  IssuerSigninKey = new SymmetricSecurityKey
- //  (Encoding.UTF8.GetBytes(builder.Configuration["Jwt: Key"])),
- //  ValidateIssuer = true,
- //  ValidateAudience true,
- //  ValidateLifeTime = false,
- //  ValidateIssuerSigningKey = true
-//}
-//}
-//);
-//builder.Services.AddAuthorization();// stop
 
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(options =>
+{
+    var key = Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]);
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+
+        ValidAudience = builder.Configuration["Jwt: Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(key),
+        ValidateIssuer = false,
+        ValidateAudience = false,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true
+
+    };
+}
+);
+builder.Services.AddAuthorization();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>{ options.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
+{
+     Description = "Standard Authorization header using the Bearer scheme (\"bearer{token}\")",
+     In = ParameterLocation.Header,
+     Name = "Authorization",
+     Type = SecuritySchemeType.ApiKey
+});
+    options.OperationFilter<SecurityRequirementsOperationFilter>();
+
+});
 
 var app = builder.Build();
-//start
-//app.UseHttpsRedirection();
-//app.MapGet("/security/getMessage", () => "Hello World!").RequireAuthorization();
-//app.MapPost("/security/createToken",
-//[AllowAnonymous] (User user) =>
-//{
-// if(user.UserName == "joydip" && user.Password == "joydip123")
-//{
-//  var issuer = builder.Configuration["Jwt:Issuer"];
-//  var audience = builder.Configuration["Jwt : Audience"];
-//  var key = Encoding.ASCII.GetBytes
-//  (builder.Configuration["Jwt:Key"]);
-//  var tokenDescriptor = new SecurityTokenDescriptor
-//{
-//  Subject = new ClaimsIdentity(new[]
-//   {
-//      new Claim("Id", Guid.NewGuid().ToString()),
-//      new Claim(JwtRegisteredClaimNames.Sub, user.UserName),
-//      new Claim(JwtRegisteredClaimNames.Email, user.UserName),
-//      new Claim(JwtRegisteredClaimNames.Jti,
-//      Guid.NewGuid().ToString())
-//      }),
-//      Expires = DateTime.UtcNow.AddMinutes(5),
-//      Issuer = issuer,
-//      Audience = audience,
-//      SigningCredentials = new SigningCredentials
-//      (new SymmetricSecurityKey(key)),
-//      SecurityAlgorithms.HmacSha512Signature)
-//      };
-//      var tokenHandler = new JwtSecurityTokenHandler();
-//      var token = tokenHandler.CreateToken(tokenDescriptor);
-//      var jwtToken = tokenHandler.WriteToken(token);
-//      var stringToken = tokenHandler.WriteToken(token);
-//      return Result.Ok(stringToken);
-//    }
-//       return Results.Unauthorized();
-//   });
-// end
+app.UseHttpsRedirection();
 
-// Configure the HTTP request pipeline.
+
+//Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -93,10 +76,10 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
+
 app.UseAuthorization();
 
 app.MapControllers();
-//app.UseAuthentication();
-//app.UseAuthorization();
 
 app.Run();

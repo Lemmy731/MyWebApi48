@@ -8,19 +8,19 @@ using System.Threading.Tasks;
 namespace ETodo.Domain.Dto
 {
     public class RegiUserDto
-    { 
-    
+    {
+
         [Required]
         public string FirstName { get; set; }
         [Required]
         public string SecondName { get; set; }
         [Required]
-        public string  Email { get; set; }
+        public string Email { get; set; }
         [Required]
         [DataType(DataType.Password)]
         public string Password { get; set; }
 
-      
+
 
 
     }

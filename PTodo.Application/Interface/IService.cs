@@ -14,9 +14,9 @@ namespace PTodo.Application.Interface
         Task<string> AddTodo(UTodoItemDto uTodoItemDto);
         Task<List<AppTodoItem>> AllTodoUser();
         Task<AppTodoItem> Update(string taskname);
-        Task<string> Login(SigninDto signinDto);
+        Task<Tokens> Login(SigninDto signinDto);
         Task<string> Register(RegiUserDto regiUserDto);
-
-
+        Task<string> VerifyPassword(PasswordDto passwordDto);
     }
+      
 }
