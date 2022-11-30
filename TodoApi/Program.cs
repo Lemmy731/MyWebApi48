@@ -18,6 +18,10 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddControllers();
+builder.Services.AddCors(o =>
+{
+    o.AddPolicy("AllowAll", builder => builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+});
 builder.Services.AddDbContext<RDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("connectionString")));
 builder.Services.AddScoped<IService, Service>();
 builder.Services.AddScoped<IAddMyTodo, AddMyTodo>();
@@ -75,6 +79,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseCors("AllowAll");
 
 app.UseAuthentication();
 
